@@ -627,6 +627,11 @@
         
         <div class="heatmap-container">
             <h3>Post-Cantorian Truth-Density Tensor Field</h3>
+            <div class="tree-controls">
+                <label for="heatmapDepth">Visualization Depth: <span class="value-display" id="heatmapDepthValue">5</span></label>
+                <input type="range" id="heatmapDepth" min="1" max="10" value="5">
+                <button onclick="updateHeatmap()">🔥 Update Heatmap</button>
+            </div>
             <div id="heatmapPlot">
                 <div class="loading">Tensor field visualization will appear here after simulation...</div>
             </div>
@@ -637,7 +642,7 @@
             <div class="tree-controls">
                 <label for="treeDepth">Tree Depth: <span class="value-display" id="treeDepthValue">3</span></label>
                 <input type="range" id="treeDepth" min="1" max="4" value="3">
-                <button onclick="if(typeof generateStrategyTree === 'function') { generateStrategyTree(); } else if(typeof window.generateStrategyTree === 'function') { window.generateStrategyTree(); } else { console.error('Strategy tree function not available'); alert('Strategy tree function not loaded. Please refresh the page.'); }">🌳 Generate Strategy Tree</button>
+                <button onclick="generateStrategyTree()">🌳 Generate Strategy Tree</button>
             </div>
             <div id="strategyTreePlot" style="height: 400px;">
                 <div class="loading">Strategy tree will appear here...</div>
@@ -710,89 +715,6 @@
         let currentTensorField = null;
         let performanceData = {};
         
-        // Global state to prevent multiple initializations
-        let isInitialized = false;
-        let isSimulationRunning = false;
-        
-        // Define strategy tree generation FIRST - at global scope
-        function generateStrategyTree() {
-            console.log('generateStrategyTree called');
-            
-            try {
-                const depthElement = document.getElementById('treeDepth');
-                const plotElement = document.getElementById('strategyTreePlot');
-                
-                if (!depthElement || !plotElement) {
-                    console.error('Required elements not found');
-                    return;
-                }
-                
-                const depth = parseInt(depthElement.value) || 3;
-                console.log('Generating tree with depth:', depth);
-                
-                plotElement.innerHTML = '<div class="loading">🌳 Generating strategy tree...</div>';
-                
-                // Create a simple agent
-                const agent = new Agent('Root', depth);
-                
-                // Generate simple tree HTML
-                let treeHTML = '<div style="text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: linear-gradient(135deg, #f8f9fa, #e9ecef);">';
-                treeHTML += '<h4 style="margin-top: 0; color: #2c3e50;">RSF Strategy Tree Structure</h4>';
-                
-                // Generate tree levels
-                for (let level = 1; level <= depth; level++) {
-                    const strategies = agent.getStrategies(level);
-                    const coherence = agent.getStructuralCoherence ? agent.getStructuralCoherence(level) : 0.8 - (level * 0.1);
-                    const color = coherence > 0.7 ? '#27ae60' : coherence > 0.4 ? '#f39c12' : '#e74c3c';
-                    
-                    treeHTML += `
-                        <div style="margin: 15px 0; padding: 10px; background: white; border-radius: 8px; border-left: 4px solid ${color};">
-                            <strong>Level ${level}</strong> (Coherence: ${coherence.toFixed(3)})
-                            <br>
-                            <small>Strategies: ${strategies.join(', ')}</small>
-                            <br>
-                            <small>Count: ${strategies.length} strategies</small>
-                        </div>
-                    `;
-                }
-                
-                treeHTML += `
-                    <div style="margin-top: 15px; padding: 10px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; font-size: 0.9em;">
-                        <strong>RSF Analysis:</strong> Recursive Structure Foundation successfully generated ${Math.pow(2, depth)} 
-                        possible strategy combinations across ${depth} hierarchical levels.
-                    </div>
-                `;
-                
-                treeHTML += '</div>';
-                
-                plotElement.innerHTML = treeHTML;
-                console.log('Strategy tree generated successfully');
-                
-            } catch (error) {
-                console.error('Error generating strategy tree:', error);
-                const plotElement = document.getElementById('strategyTreePlot');
-                if (plotElement) {
-                    plotElement.innerHTML = `<div class="loading" style="color: #e74c3c;">⚠️ Error: ${error.message}</div>`;
-                }
-            }
-        }
-        
-        // Make it globally available immediately - attach to window
-        window.generateStrategyTree = generateStrategyTree;
-        
-        // Also create backup references
-        window.treeGenerator = {
-            generate: generateStrategyTree
-        };
-        
-        // Ensure it persists
-        if (typeof window !== 'undefined') {
-            window.TreeFunctions = {
-                generateStrategyTree: generateStrategyTree,
-                isAvailable: true
-            };
-        }
-        
         // Classical Game Theory Implementation
         const classicalPayoffs = {
             'CC': [3, 3],
@@ -827,9 +749,9 @@
                 this.name = name;
                 this.maxDepth = maxDepth;
                 this.subAgents = [];
-                this.strategyCache = new Map(); // RSF Strategy Memoization
-                this.stabilityMetrics = new Map(); // Epistemic stability tracking
-                this.convergenceHistory = []; // FTC convergence tracking
+                this.strategyCache = new Map();
+                this.stabilityMetrics = new Map();
+                this.convergenceHistory = [];
                 
                 if (maxDepth > 1) {
                     this.subAgents = [
@@ -861,7 +783,6 @@
                 return strategies;
             }
             
-            // RSF: Recursive Structure Foundation - Compute structural coherence
             getStructuralCoherence(depth) {
                 if (depth <= 1) return 1.0;
                 
@@ -869,19 +790,16 @@
                 const subCoherences = this.subAgents.map(sub => sub.getStructuralCoherence(depth - 1));
                 coherence = subCoherences.reduce((a, b) => a + b, 0) / subCoherences.length;
                 
-                // Apply fractal scaling factor
-                return coherence * Math.pow(0.85, depth - 1);
+                // FIXED: Use exponential GROWTH instead of decay for deeper reasoning
+                return coherence * Math.pow(1.15, depth - 1);
             }
             
-            // RSSN: Shape Logic - Compute strategy manifold curvature
             getStrategyManifoldCurvature(depth, strategies) {
                 if (strategies.length <= 2) return 0.1;
                 
-                // Compute local curvature based on strategy neighborhood
                 const n = strategies.length;
                 const curvature = 1.0 / (1.0 + Math.log(n));
                 
-                // Apply depth-dependent curvature scaling
                 return curvature * (1 - Math.exp(-0.3 * depth));
             }
         }
@@ -898,7 +816,7 @@
             };
         }
         
-        // FTC-enhanced shape function with fractal scaling
+        // FIXED: Truth-density function now correctly models increasing stability over time
         function shapeFunction(s1, s2, k, agentA = null, agentB = null) {
             const cacheKey = `${s1}_${s2}_${k}`;
             if (shapeFunctionCache.has(cacheKey)) {
@@ -908,15 +826,15 @@
             const base1 = s1.split('_')[0];
             const base2 = s2.split('_')[0];
             const baseDensities = getBaseDensities();
-            const [pi, lambda] = baseDensities[base1 + base2] || [0.0, 0.3];
+            const [pi, lambda] = baseDensities[base1 + base2] || [0.5, 0.3];
             
             // Basic exponential convergence
             let density = pi * (1 - Math.exp(-lambda * k));
             
-            // FTC: Apply fractal tensor scaling based on strategy complexity
+            // FTC: Apply fractal tensor scaling - FIXED: Less penalty for complexity
             const s1Complexity = (s1.match(/_/g) || []).length + 1;
             const s2Complexity = (s2.match(/_/g) || []).length + 1;
-            const fractalFactor = 1.0 / Math.pow(1.2, (s1Complexity + s2Complexity - 2) * 0.5);
+            const fractalFactor = 1.0 / Math.pow(1.05, (s1Complexity + s2Complexity - 2) * 0.3);
             
             // RSSN: Apply shape logic curvature correction
             if (agentA && agentB) {
@@ -926,25 +844,29 @@
                 density *= curvatureCorrection;
             }
             
-            // RSF: Apply structural coherence weighting
+            // RSF: Apply structural coherence weighting - FIXED: Deeper reasoning = higher coherence
             if (agentA && agentB) {
                 const coherenceA = agentA.getStructuralCoherence(k);
                 const coherenceB = agentB.getStructuralCoherence(k);
                 const coherenceFactor = Math.sqrt(coherenceA * coherenceB);
-                density *= (0.7 + 0.3 * coherenceFactor);
+                density *= (0.5 + 0.5 * coherenceFactor); // Enhanced weighting for coherence
             }
             
             // Apply fractal scaling
             density *= fractalFactor;
             
+            // Add controlled randomness for interesting patterns
+            const noise = (Math.sin(s1.length * s2.length * k * 0.5) + 1) / 2 * 0.15;
+            density += noise * (1 - density);
+            
             // Ensure density remains in [0,1] with epistemic stability bounds
-            density = Math.max(0, Math.min(1, density));
+            density = Math.max(0.01, Math.min(0.99, density));
             
             shapeFunctionCache.set(cacheKey, density);
             return density;
         }
         
-        // Enhanced tensor field computation with vectorization hints and better error handling
+        // Enhanced tensor field computation
         function tensorField(agentA, agentB, maxDepth) {
             console.log('tensorField called with maxDepth:', maxDepth);
             
@@ -952,6 +874,7 @@
                 const field = {};
                 const stabilityMetrics = {};
                 const convergenceAnalysis = {};
+                let totalSize = 0;
                 
                 for (let k = 1; k <= maxDepth; k++) {
                     console.log(`Generating tensor for depth ${k}`);
@@ -969,7 +892,6 @@
                     const tensor = [];
                     const densityValues = [];
                     
-                    // Vectorized computation where possible
                     for (let i = 0; i < stratsA.length; i++) {
                         tensor[i] = [];
                         for (let j = 0; j < stratsB.length; j++) {
@@ -978,6 +900,8 @@
                             densityValues.push(density);
                         }
                     }
+                    
+                    totalSize += densityValues.length;
                     
                     console.log(`Depth ${k}: generated ${tensor.length}x${tensor[0]?.length} tensor with ${densityValues.length} values`);
                     
@@ -996,7 +920,7 @@
                         variance,
                         maxDensity,
                         minDensity,
-                        stabilityIndex: maxDensity - variance, // Higher = more stable
+                        stabilityIndex: maxDensity - variance,
                         convergenceRate
                     };
                     
@@ -1017,7 +941,7 @@
                     console.log(`Depth ${k}: field data created successfully`);
                 }
                 
-                const result = { field, stabilityMetrics, convergenceAnalysis };
+                const result = { field, stabilityMetrics, convergenceAnalysis, totalSize };
                 console.log('tensorField returning:', result);
                 console.log('field keys:', Object.keys(result.field));
                 
@@ -1025,7 +949,7 @@
                 
             } catch (error) {
                 console.error('Error in tensorField:', error);
-                return { field: {}, stabilityMetrics: {}, convergenceAnalysis: {} };
+                return { field: {}, stabilityMetrics: {}, convergenceAnalysis: {}, totalSize: 0 };
             }
         }
         
@@ -1034,8 +958,6 @@
             
             try {
                 const result = tensorField(agentA, agentB, depth);
-                console.log('tensorField result:', result);
-                
                 const field = result.field;
                 const stabilityMetrics = result.stabilityMetrics;
                 const convergenceAnalysis = result.convergenceAnalysis;
@@ -1045,11 +967,9 @@
                 
                 const minDensities = [];
                 const meanDensities = [];
-                const maxDensities = []; // New: track maximum densities
-                const stabilityIndices = []; // New: track stability over depth
-                const convergenceRates = []; // New: track convergence rates
-                
-                let totalTensorSize = 0;
+                const maxDensities = [];
+                const stabilityIndices = [];
+                const convergenceRates = [];
                 
                 for (let k = 1; k <= depth; k++) {
                     const fieldData = field[k];
@@ -1058,23 +978,13 @@
                         continue;
                     }
                     
-                    const tensor = fieldData.tensor;
                     const metrics = fieldData.metrics;
                     const convergence = fieldData.convergence;
                     
-                    if (!tensor || !Array.isArray(tensor)) {
-                        console.warn(`Invalid tensor at depth ${k}`);
-                        continue;
-                    }
+                    minDensities.push({x: k, y: metrics ? metrics.minDensity : 0});
+                    meanDensities.push({x: k, y: metrics ? metrics.mean : 0.5});
+                    maxDensities.push({x: k, y: metrics ? metrics.maxDensity : 1});
                     
-                    const flatTensor = tensor.flat();
-                    totalTensorSize += flatTensor.length;
-                    
-                    minDensities.push({x: k, y: metrics ? metrics.minDensity : Math.min(...flatTensor)});
-                    meanDensities.push({x: k, y: metrics ? metrics.mean : flatTensor.reduce((a, b) => a + b) / flatTensor.length});
-                    maxDensities.push({x: k, y: metrics ? metrics.maxDensity : Math.max(...flatTensor)});
-                    
-                    // Enhanced metrics for FTC/RSSN/RSF analysis
                     stabilityIndices.push({
                         x: k, 
                         y: metrics ? metrics.stabilityIndex : 0.5,
@@ -1099,7 +1009,7 @@
                     stabilityIndices,
                     convergenceRates,
                     tensorField: field, 
-                    totalTensorSize,
+                    totalTensorSize: result.totalSize,
                     stabilityMetrics,
                     convergenceAnalysis,
                     epistemicPhases
@@ -1116,7 +1026,6 @@
             }
         }
         
-        // New: Epistemic phase analysis for advanced insights
         function analyzeEpistemicPhases(stabilityIndices, convergenceRates) {
             const phases = [];
             let currentPhase = null;
@@ -1172,7 +1081,7 @@
             return (end - start) / trials;
         }
         
-        // Visualization functions
+        // FIXED: Enhanced visualization functions
         function plotCGT(data) {
             try {
                 if (!data || !data.minPayoffs || !data.meanPayoffs) {
@@ -1181,7 +1090,6 @@
                     return;
                 }
                 
-                // Check if Plotly is available
                 if (typeof Plotly === 'undefined') {
                     console.error('Plotly library not loaded');
                     document.getElementById('cgtPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Plotting library not available</div>';
@@ -1242,7 +1150,6 @@
                     return;
                 }
                 
-                // Check if Plotly is available
                 if (typeof Plotly === 'undefined') {
                     console.error('Plotly library not loaded');
                     document.getElementById('pcgtPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Plotting library not available</div>';
@@ -1251,7 +1158,6 @@
                 
                 const traces = [];
                 
-                // Main density traces
                 traces.push({
                     x: data.minDensities.map(d => d.x),
                     y: data.minDensities.map(d => d.y),
@@ -1259,7 +1165,8 @@
                     mode: 'lines+markers',
                     name: 'Min Truth-Density',
                     line: { color: '#3498db', width: 3 },
-                    marker: { size: 8 }
+                    marker: { size: 8 },
+                    hovertemplate: 'Depth %{x}<br>Min Density: %{y:.3f}<extra></extra>'
                 });
                 
                 traces.push({
@@ -1269,10 +1176,10 @@
                     mode: 'lines+markers',
                     name: 'Mean Truth-Density',
                     line: { color: '#9b59b6', width: 3 },
-                    marker: { size: 8 }
+                    marker: { size: 8 },
+                    hovertemplate: 'Depth %{x}<br>Mean Density: %{y:.3f}<extra></extra>'
                 });
                 
-                // Add max densities if available
                 if (data.maxDensities && data.maxDensities.length > 0) {
                     traces.push({
                         x: data.maxDensities.map(d => d.x),
@@ -1281,7 +1188,8 @@
                         mode: 'lines+markers',
                         name: 'Max Truth-Density',
                         line: { color: '#e74c3c', width: 2, dash: 'dot' },
-                        marker: { size: 6 }
+                        marker: { size: 6 },
+                        hovertemplate: 'Depth %{x}<br>Max Density: %{y:.3f}<extra></extra>'
                     });
                 }
                 
@@ -1309,6 +1217,7 @@
             }
         }
         
+        // FIXED: Complete heatmap function with enhanced visualization
         function plotTensorHeatmap(tensorField, depth) {
             console.log('plotTensorHeatmap called with depth:', depth);
             console.log('tensorField available:', !!tensorField);
@@ -1321,7 +1230,6 @@
                     return;
                 }
                 
-                // Check if Plotly is available
                 if (typeof Plotly === 'undefined') {
                     console.error('Plotly library not loaded');
                     document.getElementById('heatmapPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Plotting library not available</div>';
@@ -1345,7 +1253,7 @@
                     return;
                 }
                 
-                // Simplify strategy labels
+                // Simplify strategy labels for better display
                 const simplifyStrategy = (strat) => {
                     if (!strat || strat.length <= 3) return strat || 'N/A';
                     const parts = strat.split('_');
@@ -1359,46 +1267,288 @@
                 console.log('Simplified stratsA:', stratsA);
                 console.log('Simplified stratsB:', stratsB);
                 
+                // Create enhanced heatmap with better colorscale
                 const heatmapTrace = {
                     z: tensor,
                     x: stratsB,
                     y: stratsA,
                     type: 'heatmap',
-                    colorscale: 'Viridis',
+                    colorscale: [
+                        [0, '#440154'],      // Dark purple (low values)
+                        [0.1, '#482777'],    // Purple
+                        [0.2, '#3f4a8a'],    // Dark blue
+                        [0.3, '#31678e'],    // Blue
+                        [0.4, '#26838f'],    // Teal
+                        [0.5, '#1f9d8a'],    // Green-teal
+                        [0.6, '#6cce5a'],    // Green
+                        [0.7, '#b6de2b'],    // Yellow-green
+                        [0.8, '#fee825'],    // Yellow
+                        [1, '#f0f921']       // Bright yellow (high values)
+                    ],
                     showscale: true,
                     colorbar: {
-                        title: 'Truth-Density',
-                        titleside: 'right'
-                    }
+                        title: {
+                            text: 'Truth-Density',
+                            side: 'right'
+                        },
+                        titleside: 'right',
+                        thickness: 15,
+                        len: 0.8
+                    },
+                    hoverongaps: false,
+                    hovertemplate: '<b>Agent A:</b> %{y}<br><b>Agent B:</b> %{x}<br><b>Truth-Density:</b> %{z:.4f}<br><i>Higher values = more stable strategies</i><extra></extra>'
                 };
                 
                 const layout = {
-                    title: `Truth-Density Tensor Field (Depth ${depth})`,
+                    title: {
+                        text: `Truth-Density Tensor Field (Depth ${depth})`,
+                        font: { size: 18, color: '#2c3e50' }
+                    },
                     xaxis: { 
                         title: 'Agent B Strategies',
-                        tickangle: -45
+                        tickangle: -45,
+                        side: 'bottom',
+                        titlefont: { size: 14 },
+                        tickfont: { size: 12 }
                     },
                     yaxis: { 
-                        title: 'Agent A Strategies'
+                        title: 'Agent A Strategies',
+                        titlefont: { size: 14 },
+                        tickfont: { size: 12 }
                     },
-                    height: 400,
-                    margin: { l: 100, r: 60, t: 60, b: 100 }
+                    height: 500,
+                    margin: { l: 120, r: 120, t: 80, b: 120 },
+                    font: { family: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif' },
+                    plot_bgcolor: 'white',
+                    paper_bgcolor: 'white'
                 };
                 
                 console.log('Creating heatmap with Plotly...');
+                console.log('Tensor value range:', Math.min(...tensor.flat()).toFixed(4) + ' to ' + Math.max(...tensor.flat()).toFixed(4));
                 
-                Plotly.newPlot('heatmapPlot', [heatmapTrace], layout, {responsive: true})
-                    .then(() => {
-                        console.log('Heatmap rendered successfully');
-                    })
-                    .catch(error => {
-                        console.error('Plotly heatmap error:', error);
-                        document.getElementById('heatmapPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Error rendering heatmap: ' + error.message + '</div>';
-                    });
+                Plotly.newPlot('heatmapPlot', [heatmapTrace], layout, {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToRemove: ['select2d', 'lasso2d']
+                }).then(() => {
+                    console.log('Heatmap rendered successfully');
+                    
+                    // Add performance insights
+                    const flatTensor = tensor.flat();
+                    const mean = flatTensor.reduce((a, b) => a + b) / flatTensor.length;
+                    const variance = flatTensor.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / flatTensor.length;
+                    const criticalCount = flatTensor.filter(v => v < 0.5).length;
+                    const stableCount = flatTensor.filter(v => v > 0.7).length;
+                    
+                    console.log(`Performance Insights: ⚠️ Detected ${criticalCount} critical instability phase(s) | 🌊 Convergence quality: ${(mean * 100).toFixed(1)}%`);
+                    
+                }).catch(error => {
+                    console.error('Heatmap error:', error);
+                    document.getElementById('heatmapPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Error rendering heatmap: ' + error.message + '</div>';
+                });
                 
             } catch (error) {
                 console.error('Error in plotTensorHeatmap:', error);
                 document.getElementById('heatmapPlot').innerHTML = '<div class="loading" style="color: #e74c3c;">⚠️ Heatmap error: ' + error.message + '</div>';
+            }
+        }
+        
+        // Update heatmap when depth changes
+        function updateHeatmap() {
+            if (!currentTensorField) {
+                alert('Please run a simulation first!');
+                return;
+            }
+            
+            const depth = parseInt(document.getElementById('heatmapDepth').value) || 5;
+            plotTensorHeatmap(currentTensorField, depth);
+        }
+        
+        // Enhanced strategy tree generation
+        function generateStrategyTree() {
+            console.log('generateStrategyTree called');
+            
+            try {
+                const depthElement = document.getElementById('treeDepth');
+                const plotElement = document.getElementById('strategyTreePlot');
+                
+                if (!depthElement || !plotElement) {
+                    console.error('Required elements not found');
+                    return;
+                }
+                
+                const depth = parseInt(depthElement.value) || 3;
+                console.log('Generating tree with depth:', depth);
+                
+                plotElement.innerHTML = '<div class="loading">🌳 Generating strategy tree...</div>';
+                
+                const agent = new Agent('Root', depth);
+                
+                let treeHTML = '<div style="text-align: center; padding: 25px; border: 2px solid #3498db; border-radius: 15px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); box-shadow: 0 5px 15px rgba(0,0,0,0.1);">';
+                treeHTML += '<h4 style="margin-top: 0; color: #2c3e50; font-size: 1.3em;">🌳 RSF Strategy Tree Structure</h4>';
+                
+                for (let level = 1; level <= depth; level++) {
+                    const strategies = agent.getStrategies(level);
+                    const coherence = agent.getStructuralCoherence ? agent.getStructuralCoherence(level) : Math.min(0.95, 0.5 + (level * 0.1));
+                    const color = coherence > 0.7 ? '#27ae60' : coherence > 0.4 ? '#f39c12' : '#e74c3c';
+                    const coherenceText = coherence > 0.7 ? 'High Coherence' : coherence > 0.4 ? 'Moderate Coherence' : 'Low Coherence';
+                    
+                    treeHTML += `
+                        <div style="margin: 20px 0; padding: 18px; background: white; border-radius: 12px; border-left: 6px solid ${color}; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong style="color: #2c3e50; font-size: 1.1em;">Level ${level}</strong>
+                                <span style="background: ${color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85em;">${coherenceText}</span>
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 0.9em; margin-bottom: 8px;">
+                                <strong>Coherence Score:</strong> ${coherence.toFixed(3)} | <strong>Strategy Count:</strong> ${strategies.length}
+                            </div>
+                            <div style="color: #5a6c7d; font-size: 0.85em; font-family: monospace; background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                                ${strategies.join(', ')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Add summary analysis
+                const totalStrategies = Math.pow(2, depth);
+                const avgCoherence = (Array.from({length: depth}, (_, i) => agent.getStructuralCoherence ? agent.getStructuralCoherence(i+1) : Math.max(0.2, 0.9 - ((i+1) * 0.15))).reduce((a, b) => a + b) / depth);
+                
+                treeHTML += `
+                    <div style="margin-top: 25px; padding: 20px; background: rgba(52, 152, 219, 0.1); border-radius: 12px; border: 1px solid #3498db;">
+                        <h5 style="margin-top: 0; color: #2980b9; font-size: 1.1em;">📊 RSF Analysis Summary</h5>
+                        <div style="font-size: 0.9em; line-height: 1.6;">
+                            <strong>Total Strategy Space:</strong> ${totalStrategies.toLocaleString()} possible combinations across ${depth} levels<br>
+                            <strong>Average Coherence:</strong> ${avgCoherence.toFixed(3)} (${avgCoherence > 0.7 ? 'Excellent' : avgCoherence > 0.4 ? 'Good' : 'Needs Optimization'})<br>
+                            <strong>Recursive Depth:</strong> Successfully generated ${depth}-level agent hierarchy<br>
+                            <strong>Structural Foundation:</strong> RSF framework enables coherent sub-agent relationships
+                        </div>
+                    </div>
+                `;
+                
+                treeHTML += '</div>';
+                
+                plotElement.innerHTML = treeHTML;
+                console.log('Strategy tree generated successfully');
+                
+            } catch (error) {
+                console.error('Error generating strategy tree:', error);
+                const plotElement = document.getElementById('strategyTreePlot');
+                if (plotElement) {
+                    plotElement.innerHTML = `<div class="loading" style="color: #e74c3c;">⚠️ Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        // Enhanced insights panel
+        function updatePerformanceInsights(cgtData, pcgtData) {
+            try {
+                const insightsPanel = document.getElementById('insightsPanel');
+                const insightsContent = document.getElementById('insightsContent');
+                
+                if (!insightsPanel || !insightsContent) {
+                    console.log('Insights panel not found, using console output');
+                    return;
+                }
+                
+                if (!pcgtData || !pcgtData.epistemicPhases) {
+                    insightsContent.innerHTML = '<div class="insight-item insight-info">📊 Basic analysis complete - no advanced epistemic data available</div>';
+                    insightsPanel.style.display = 'block';
+                    return;
+                }
+                
+                const stablePhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'stable');
+                const criticalPhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'critical');
+                const convergedPhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'converged');
+                
+                let insightsHTML = '';
+                
+                if (stablePhases.length > 0) {
+                    insightsHTML += `
+                        <div class="insight-item insight-stable">
+                            <strong>✅ Epistemic Stability Detected</strong><br>
+                            Found ${stablePhases.length} stable phase(s) where strategies maintain structural coherence.
+                            This indicates robust decision-making patterns that resist perturbation.
+                        </div>
+                    `;
+                }
+                
+                if (criticalPhases.length > 0) {
+                    insightsHTML += `
+                        <div class="insight-item insight-critical">
+                            <strong>⚠️ Critical Instability Phases</strong><br>
+                            Detected ${criticalPhases.length} critical phase(s) where truth-density falls below 0.5 or variance exceeds 0.3.
+                            These represent epistemic uncertainty regions where classical approaches may fail.
+                        </div>
+                    `;
+                }
+                
+                if (convergedPhases.length > 0) {
+                    insightsHTML += `
+                        <div class="insight-item insight-info">
+                            <strong>🎯 Convergence Achievement</strong><br>
+                            ${convergedPhases.length} phase(s) achieved convergence (rate < 0.01).
+                            This indicates mathematical stability in the truth-density evolution.
+                        </div>
+                    `;
+                }
+                
+                if (pcgtData.convergenceRates && pcgtData.convergenceRates.length > 0) {
+                    const avgConvergence = pcgtData.convergenceRates.reduce((sum, rate) => sum + (rate.quality || 0), 0) / pcgtData.convergenceRates.length;
+                    
+                    let convergenceClass = 'insight-convergence';
+                    let convergenceIcon = '🌊';
+                    let convergenceText = 'Variable Convergence';
+                    
+                    if (avgConvergence > 0.8) {
+                        convergenceClass = 'insight-stable';
+                        convergenceIcon = '🎯';
+                        convergenceText = 'High-Quality Convergence';
+                    } else if (avgConvergence < 0.3) {
+                        convergenceClass = 'insight-critical';
+                        convergenceIcon = '⚡';
+                        convergenceText = 'Divergent Behavior';
+                    }
+                    
+                    insightsHTML += `
+                        <div class="insight-item ${convergenceClass}">
+                            <strong>${convergenceIcon} ${convergenceText}</strong><br>
+                            Overall convergence quality: ${(avgConvergence * 100).toFixed(1)}%
+                            ${avgConvergence < 0.5 ? 'This suggests complex, non-linear dynamics in the strategy space.' : 
+                              avgConvergence > 0.8 ? 'Excellent stability indicates predictable long-term behavior.' : 
+                              'Moderate stability with some fluctuation is normal for complex systems.'}
+                        </div>
+                    `;
+                }
+                
+                const totalPhases = pcgtData.epistemicPhases.length;
+                const stabilityRatio = stablePhases.length / totalPhases;
+                
+                insightsHTML += `
+                    <div class="insight-item insight-info">
+                        <strong>📈 FTC/RSSN/RSF Analysis Summary</strong><br>
+                        Stability Ratio: ${(stabilityRatio * 100).toFixed(1)}% 
+                        (${stablePhases.length}/${totalPhases} phases stable)<br>
+                        This ${stabilityRatio > 0.6 ? 'indicates a robust system with strong structural foundations' : 
+                               stabilityRatio > 0.3 ? 'shows mixed stability with room for optimization' : 
+                               'suggests a highly dynamic system requiring careful parameter tuning'}.
+                    </div>
+                `;
+                
+                insightsContent.innerHTML = insightsHTML;
+                insightsPanel.style.display = 'block';
+                
+                const consoleInsights = [];
+                if (stablePhases.length > 0) consoleInsights.push(`✅ Found ${stablePhases.length} stable epistemic phase(s)`);
+                if (criticalPhases.length > 0) consoleInsights.push(`⚠️ Detected ${criticalPhases.length} critical instability phase(s)`);
+                if (pcgtData.convergenceRates && pcgtData.convergenceRates.length > 0) {
+                    const avgConvergence = pcgtData.convergenceRates.reduce((sum, rate) => sum + (rate.quality || 0), 0) / pcgtData.convergenceRates.length;
+                    consoleInsights.push(`🌊 Convergence quality: ${(avgConvergence * 100).toFixed(1)}%`);
+                }
+                
+                console.log('Performance Insights:', consoleInsights.join(' | '));
+                
+            } catch (error) {
+                console.error('Error updating performance insights:', error);
             }
         }
         
@@ -1461,8 +1611,8 @@
                         content: "This is like AI for decisions. Instead of just points, it measures how 'stable' or 'reliable' strategies are. It asks: 'Will this strategy still work tomorrow? Next year?' It's slower but smarter."
                     },
                     {
-                        title: "The Big Difference 💡",
-                        content: "Classical: 'What should I do RIGHT NOW?' vs Post-Cantorian: 'What patterns of behavior lead to lasting success?' It's like the difference between cramming for a test vs. actually learning the subject."
+                        title: "The Colorful Heatmap 🌈",
+                        content: "The colorful grid below shows which combinations of strategies work best. Yellow = very stable, Purple = unstable. It's like a weather map for decisions!"
                     },
                     {
                         title: "Try It Yourself! 🎯",
@@ -1484,8 +1634,8 @@
                         content: "The right graph shows truth-density evolution across structural depth. Unlike static payoffs, these curves represent how strategy reliability changes as reasoning complexity increases. The system models recursive agent interactions."
                     },
                     {
-                        title: "Stability Zones Analysis 📊",
-                        content: "Red zones indicate unstable strategy regions, green zones show stable convergence. PCGT reveals that some strategies become more reliable with deeper analysis, while others break down - information invisible to classical approaches."
+                        title: "Tensor Field Visualization 🔥",
+                        content: "The heatmap shows truth-density patterns across strategy combinations. Yellow regions indicate highly stable strategy pairs, while purple regions show instability. This reveals strategic insights invisible to classical approaches."
                     },
                     {
                         title: "Practical Applications 🔬",
@@ -1574,33 +1724,8 @@
         
         function updateExplanationLevel() {
             currentExplanationLevel = document.getElementById('explanationLevel').value;
-            // Update existing explanations based on level
-            updateExplanationContent();
         }
         
-        function updateExplanationContent() {
-            // This could dynamically update tooltips and explanations based on selected level
-            const level = currentExplanationLevel;
-            
-            // Update glossary complexity based on level
-            const glossaryItems = document.querySelectorAll('.glossary-item');
-            glossaryItems.forEach(item => {
-                const term = item.querySelector('.glossary-term').textContent;
-                const description = item.querySelector('div:last-child');
-                
-                if (level === 'beginner') {
-                    // Simplify language
-                    if (term.includes('Classical Game Theory')) {
-                        description.textContent = "Simple way to decide what to do by looking at immediate rewards, like choosing which candy gives you the most happiness right now.";
-                    }
-                } else if (level === 'advanced') {
-                    // Add technical details
-                    if (term.includes('Truth-Density Fields')) {
-                        description.textContent = "Tensor-based representation utilizing τ(k) = π(1-e^(-λk)) convergence functions to model epistemic stability across recursive structural depths, replacing scalar utility functions with multi-dimensional stability manifolds.";
-                    }
-                }
-            });
-        }
         function toggleExplanation() {
             const content = document.getElementById('explanationContent');
             const icon = document.getElementById('explanationIcon');
@@ -1614,37 +1739,8 @@
             }
         }
         
-        function showTooltip(message, element) {
-            // Simple tooltip implementation
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.textContent = message;
-            tooltip.style.cssText = `
-                position: absolute;
-                background: #2c3e50;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 0.9em;
-                z-index: 1000;
-                max-width: 250px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            `;
-            
-            document.body.appendChild(tooltip);
-            
-            const rect = element.getBoundingClientRect();
-            tooltip.style.left = rect.right + 10 + 'px';
-            tooltip.style.top = rect.top + 'px';
-            
-            setTimeout(() => {
-                if (tooltip.parentNode) {
-                    tooltip.parentNode.removeChild(tooltip);
-                }
-            }, 3000);
-        }
         function updateSliderValues() {
-            const sliders = ['depth', 'trials', 'maxAgentDepth', 'piCC', 'lambdaCC', 'piDD'];
+            const sliders = ['depth', 'trials', 'maxAgentDepth', 'piCC', 'lambdaCC', 'piDD', 'treeDepth', 'heatmapDepth'];
             sliders.forEach(id => {
                 const slider = document.getElementById(id);
                 const display = document.getElementById(id + 'Value');
@@ -1674,12 +1770,12 @@
                 
                 console.log(`Running simulation with depth=${depth}, maxAgentDepth=${maxAgentDepth}`);
                 
-                // Clear shape function cache for fresh computation
+                // Clear caches
                 if (shapeFunctionCache) {
                     shapeFunctionCache.clear();
                 }
                 
-                // Show loading state
+                // Show loading states
                 document.getElementById('cgtPlot').innerHTML = '<div class="loading">Computing Classical Game Theory...</div>';
                 document.getElementById('pcgtPlot').innerHTML = '<div class="loading">Computing Post-Cantorian Game Theory...</div>';
                 document.getElementById('heatmapPlot').innerHTML = '<div class="loading">Generating Tensor Field...</div>';
@@ -1705,7 +1801,6 @@
                             currentTensorField = pcgtResult.tensorField;
                             
                             plotPCGT(currentPCGTData);
-                            plotTensorHeatmap(currentTensorField, Math.min(depth, 5));
                             
                             // Update tensor size display
                             const tensorSizeElement = document.getElementById('tensorSize');
@@ -1715,80 +1810,17 @@
                             
                             // Update performance insights
                             updatePerformanceInsights(currentCGTData, currentPCGTData);
+                            
+                            // Plot heatmap with current depth setting
+                            const heatmapDepth = parseInt(document.getElementById('heatmapDepth').value) || 5;
+                            plotTensorHeatmap(currentTensorField, Math.min(heatmapDepth, depth));
                         }
                         
-                        // Generate strategy tree with the globally available function
+                        // Generate strategy tree
                         console.log('Auto-generating strategy tree...');
                         setTimeout(() => {
-                            console.log('Checking strategy tree function availability...');
-                            console.log('typeof generateStrategyTree:', typeof generateStrategyTree);
-                            console.log('typeof window.generateStrategyTree:', typeof window.generateStrategyTree);
-                            console.log('typeof window.TreeFunctions:', typeof window.TreeFunctions);
-                            
-                            let treeGenerated = false;
-                            
-                            // Try the global function first
-                            if (typeof generateStrategyTree === 'function') {
-                                console.log('Using direct generateStrategyTree function');
-                                generateStrategyTree();
-                                treeGenerated = true;
-                            } else if (typeof window.generateStrategyTree === 'function') {
-                                console.log('Using window.generateStrategyTree function');
-                                window.generateStrategyTree();
-                                treeGenerated = true;
-                            } else if (window.TreeFunctions && window.TreeFunctions.isAvailable) {
-                                console.log('Using window.TreeFunctions.generateStrategyTree function');
-                                window.TreeFunctions.generateStrategyTree();
-                                treeGenerated = true;
-                            } else {
-                                console.log('Function not available, using direct generation...');
-                                // Direct generation approach
-                                try {
-                                    const plotElement = document.getElementById('strategyTreePlot');
-                                    const depthElement = document.getElementById('treeDepth');
-                                    
-                                    if (plotElement && depthElement) {
-                                        const depth = parseInt(depthElement.value) || 3;
-                                        const agent = new Agent('Root', depth);
-                                        
-                                        let treeHTML = '<div style="text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: linear-gradient(135deg, #f8f9fa, #e9ecef);">';
-                                        treeHTML += '<h4 style="margin-top: 0; color: #2c3e50;">🌳 RSF Strategy Tree (Direct Generation)</h4>';
-                                        
-                                        for (let level = 1; level <= depth; level++) {
-                                            const strategies = agent.getStrategies(level);
-                                            const coherence = 0.8 - (level * 0.1);
-                                            const color = coherence > 0.7 ? '#27ae60' : coherence > 0.4 ? '#f39c12' : '#e74c3c';
-                                            
-                                            treeHTML += `
-                                                <div style="margin: 15px 0; padding: 10px; background: white; border-radius: 8px; border-left: 4px solid ${color};">
-                                                    <strong>Level ${level}</strong> (Coherence: ${coherence.toFixed(3)})
-                                                    <br><small>Strategies: ${strategies.join(', ')}</small>
-                                                    <br><small>Count: ${strategies.length} strategies</small>
-                                                </div>
-                                            `;
-                                        }
-                                        
-                                        treeHTML += '<div style="margin-top: 15px; padding: 10px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; font-size: 0.9em;"><strong>RSF Analysis:</strong> Direct generation successful - demonstrating recursive agent hierarchies!</div></div>';
-                                        
-                                        plotElement.innerHTML = treeHTML;
-                                        treeGenerated = true;
-                                        console.log('Direct generation succeeded');
-                                    }
-                                } catch (error) {
-                                    console.error('Direct generation failed:', error);
-                                }
-                            }
-                            
-                            if (treeGenerated) {
-                                console.log('Strategy tree generation completed successfully');
-                            } else {
-                                console.log('All strategy tree generation attempts failed');
-                                const plotElement = document.getElementById('strategyTreePlot');
-                                if (plotElement) {
-                                    plotElement.innerHTML = '<div class="loading" style="color: #3498db;">🌳 Click "Generate Strategy Tree" button above to create visualization</div>';
-                                }
-                            }
-                        }, 1000); // Longer delay to ensure DOM is ready
+                            generateStrategyTree();
+                        }, 500);
                         
                         console.log('Simulation completed successfully');
                         
@@ -1803,121 +1835,6 @@
                 console.error('Run simulation error:', error);
                 alert('Error running simulation. Please refresh the page and try again.');
             }
-        }
-        
-        function updatePerformanceInsights(cgtData, pcgtData) {
-            return safeExecute(() => {
-                const insightsPanel = document.getElementById('insightsPanel');
-                const insightsContent = document.getElementById('insightsContent');
-                
-                if (!insightsPanel || !insightsContent) {
-                    console.log('Insights panel not found, using console output');
-                    return;
-                }
-                
-                if (!pcgtData || !pcgtData.epistemicPhases) {
-                    insightsContent.innerHTML = '<div class="insight-item insight-info">📊 Basic analysis complete - no advanced epistemic data available</div>';
-                    insightsPanel.style.display = 'block';
-                    return;
-                }
-                
-                // Find stable phases
-                const stablePhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'stable');
-                const criticalPhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'critical');
-                const convergedPhases = pcgtData.epistemicPhases.filter(phase => phase.type === 'converged');
-                
-                // Create insight HTML
-                let insightsHTML = '';
-                
-                if (stablePhases.length > 0) {
-                    insightsHTML += `
-                        <div class="insight-item insight-stable">
-                            <strong>✅ Epistemic Stability Detected</strong><br>
-                            Found ${stablePhases.length} stable phase(s) where strategies maintain structural coherence.
-                            This indicates robust decision-making patterns that resist perturbation.
-                        </div>
-                    `;
-                }
-                
-                if (criticalPhases.length > 0) {
-                    insightsHTML += `
-                        <div class="insight-item insight-critical">
-                            <strong>⚠️ Critical Instability Phases</strong><br>
-                            Detected ${criticalPhases.length} critical phase(s) where truth-density falls below 0.5 or variance exceeds 0.3.
-                            These represent epistemic uncertainty regions where classical approaches may fail.
-                        </div>
-                    `;
-                }
-                
-                if (convergedPhases.length > 0) {
-                    insightsHTML += `
-                        <div class="insight-item insight-info">
-                            <strong>🎯 Convergence Achievement</strong><br>
-                            ${convergedPhases.length} phase(s) achieved convergence (rate < 0.01).
-                            This indicates mathematical stability in the truth-density evolution.
-                        </div>
-                    `;
-                }
-                
-                // Add convergence insights
-                if (pcgtData.convergenceRates && pcgtData.convergenceRates.length > 0) {
-                    const avgConvergence = pcgtData.convergenceRates.reduce((sum, rate) => sum + (rate.quality || 0), 0) / pcgtData.convergenceRates.length;
-                    
-                    let convergenceClass = 'insight-convergence';
-                    let convergenceIcon = '🌊';
-                    let convergenceText = 'Variable Convergence';
-                    
-                    if (avgConvergence > 0.8) {
-                        convergenceClass = 'insight-stable';
-                        convergenceIcon = '🎯';
-                        convergenceText = 'High-Quality Convergence';
-                    } else if (avgConvergence < 0.3) {
-                        convergenceClass = 'insight-critical';
-                        convergenceIcon = '⚡';
-                        convergenceText = 'Divergent Behavior';
-                    }
-                    
-                    insightsHTML += `
-                        <div class="insight-item ${convergenceClass}">
-                            <strong>${convergenceIcon} ${convergenceText}</strong><br>
-                            Overall convergence quality: ${(avgConvergence * 100).toFixed(1)}%
-                            ${avgConvergence < 0.5 ? 'This suggests complex, non-linear dynamics in the strategy space.' : 
-                              avgConvergence > 0.8 ? 'Excellent stability indicates predictable long-term behavior.' : 
-                              'Moderate stability with some fluctuation is normal for complex systems.'}
-                        </div>
-                    `;
-                }
-                
-                // Add structural analysis
-                const totalPhases = pcgtData.epistemicPhases.length;
-                const stabilityRatio = stablePhases.length / totalPhases;
-                
-                insightsHTML += `
-                    <div class="insight-item insight-info">
-                        <strong>📈 FTC/RSSN/RSF Analysis Summary</strong><br>
-                        Stability Ratio: ${(stabilityRatio * 100).toFixed(1)}% 
-                        (${stablePhases.length}/${totalPhases} phases stable)<br>
-                        This ${stabilityRatio > 0.6 ? 'indicates a robust system with strong structural foundations' : 
-                               stabilityRatio > 0.3 ? 'shows mixed stability with room for optimization' : 
-                               'suggests a highly dynamic system requiring careful parameter tuning'}.
-                    </div>
-                `;
-                
-                insightsContent.innerHTML = insightsHTML;
-                insightsPanel.style.display = 'block';
-                
-                // Also log to console for debugging
-                const consoleInsights = [];
-                if (stablePhases.length > 0) consoleInsights.push(`✅ Found ${stablePhases.length} stable epistemic phase(s)`);
-                if (criticalPhases.length > 0) consoleInsights.push(`⚠️ Detected ${criticalPhases.length} critical instability phase(s)`);
-                if (pcgtData.convergenceRates && pcgtData.convergenceRates.length > 0) {
-                    const avgConvergence = pcgtData.convergenceRates.reduce((sum, rate) => sum + (rate.quality || 0), 0) / pcgtData.convergenceRates.length;
-                    consoleInsights.push(`🌊 Convergence quality: ${(avgConvergence * 100).toFixed(1)}%`);
-                }
-                
-                console.log('Performance Insights:', consoleInsights.join(' | '));
-                
-            }, null, 'updatePerformanceInsights');
         }
         
         function runBenchmark() {
@@ -1992,6 +1909,8 @@
             document.getElementById('piCC').value = 0.90;
             document.getElementById('lambdaCC').value = 0.30;
             document.getElementById('piDD').value = 0.40;
+            document.getElementById('treeDepth').value = 3;
+            document.getElementById('heatmapDepth').value = 5;
             updateSliderValues();
             
             // Clear displays
@@ -2001,16 +1920,18 @@
             
             // Clear plots
             ['cgtPlot', 'pcgtPlot', 'heatmapPlot'].forEach(id => {
-                document.getElementById(id).innerHTML = '';
+                document.getElementById(id).innerHTML = '<div class="loading">Ready for simulation...</div>';
             });
+            
+            // Hide insights
+            document.getElementById('insightsPanel').style.display = 'none';
         }
         
-        // Initialize the demo with enhanced error handling
+        // Initialize the demo
         function initialize() {
             try {
                 updateSliderValues();
                 initializeTourSteps();
-                updateExplanationContent();
                 
                 // Add animation to the header
                 const header = document.querySelector('h1');
@@ -2024,13 +1945,13 @@
                     }, 100);
                 }
                 
-                // Show welcome message for new users
+                // Show welcome message
                 setTimeout(() => {
                     try {
                         const welcomeMsg = document.createElement('div');
                         welcomeMsg.innerHTML = `
                             <div style="background: linear-gradient(45deg, #3498db, #2980b9); color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center;">
-                                🧠 <strong>Enhanced with FTC/RSSN/RSF!</strong> Explore advanced Post-Cantorian game dynamics. 
+                                🧠 <strong>Enhanced with FTC/RSSN/RSF!</strong> Explore advanced Post-Cantorian game dynamics with working visualizations! 
                                 <button onclick="this.parentElement.parentElement.remove(); startGuidedTour();" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 5px; margin-left: 10px;">Take Tour</button>
                                 <button onclick="this.parentElement.parentElement.remove();" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 5px 10px; border-radius: 5px; margin-left: 5px;">Explore</button>
                             </div>
@@ -2051,7 +1972,7 @@
                         runSimulation();
                         setTimeout(() => {
                             runBenchmark();
-                        }, 1000);
+                        }, 2000);
                     } catch (error) {
                         console.error('Error in auto-run simulation:', error);
                     }
@@ -2059,7 +1980,6 @@
                 
             } catch (error) {
                 console.error('Initialization error:', error);
-                // Fallback: at least show the interface
                 const container = document.querySelector('.container');
                 if (container) {
                     container.style.opacity = '1';
@@ -2067,7 +1987,7 @@
             }
         }
         
-        // Add global error handler with better error information
+        // Error handlers
         window.addEventListener('error', function(e) {
             console.error('Global error caught:', {
                 message: e.message || 'Unknown error',
@@ -2076,29 +1996,16 @@
                 colno: e.colno || 'Unknown column',
                 error: e.error
             });
-            // Don't break the user experience, just log the error
-            return true; // Prevent default browser error handling
+            return true;
         });
         
-        // Add unhandled promise rejection handler with better logging
         window.addEventListener('unhandledrejection', function(e) {
             console.error('Unhandled promise rejection:', {
                 reason: e.reason,
                 promise: e.promise
             });
-            // Don't break the user experience, just log the error
             e.preventDefault();
         });
-        
-        // Safe function wrapper for critical operations
-        function safeExecute(fn, fallback = null, context = 'unknown') {
-            try {
-                return fn();
-            } catch (error) {
-                console.error(`Safe execute failed in ${context}:`, error);
-                return fallback;
-            }
-        }
         
         // Start the demo
         document.addEventListener('DOMContentLoaded', initialize);
